@@ -2,31 +2,29 @@
 
 echo "Script is running"
 
-# Create an empty JSON object
+TEMPLATE_FILE="/usr/share/nginx/html/assets/env.template.json"
+ENV_JSON_FILE="/usr/share/nginx/html/assets/env.json"
+
 json="{"
 
-# Loop through environment variables and append them to the JSON object
-for var in $(env | cut -d= -f1); do
-  value=$(printenv "$var")
+# Extract only keys from template file using plain sed
+keys=$(sed -n 's/^[[:space:]]*"\([^"]*\)".*:.*/\1/p' "$TEMPLATE_FILE")
 
-  # Escape double quotes and backslashes in the value
-  value=$(echo "$value" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
-
-  # Concatenate properly in POSIX sh
-  json="$json\"$var\": \"$value\", "
+for key in $keys; do
+  value=$(printenv "$key")
+  # Escape backslashes and double quotes
+  escaped_value=$(echo "$value" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+  json="$json\"$key\": \"$escaped_value\", "
 done
 
-# Remove the last comma and space
+# Remove trailing comma and space
 json=$(echo "$json" | sed 's/, $//')
-
-# Close the JSON object
 json="$json}"
 
 # Write to env.json
-echo "$json" > /usr/share/nginx/html/assets/env.json
+echo "$json" > "$ENV_JSON_FILE"
 
-# Log to debug
-echo "Final JSON: $json"
+echo "Generated env.json:"
+cat "$ENV_JSON_FILE"
 
-# Execute the original CMD
 exec "$@"
