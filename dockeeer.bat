@@ -1,3 +1,5 @@
-docker build --progress=plain --no-cache -t angular-app .
+cls && clear 
 
-docker run --env-file environments\.env.prod -p 4200:80 angular-app
+docker build --progress=plain -t angular-app .
+
+docker run --env-file environments\.env.dev -p 4200:80 angular-app
