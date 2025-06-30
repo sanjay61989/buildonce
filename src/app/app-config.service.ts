@@ -1,26 +1,38 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { ReplaySubject, Observable, EMPTY, catchError, tap } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root',
-})
+export interface EnvConfig {
+  API_URL: string;
+  ENV_NAME: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class AppConfigService {
-  private config: any;
+  private cfgSync?: EnvConfig;
+
+  private cfg$ = new ReplaySubject<EnvConfig>(1);
 
   constructor(private http: HttpClient) {}
 
-  loadConfig() {
-    return this.http
-      .get('/assets/env.json')
-      .toPromise()
-      .then((config) => (this.config = config));
+  loadConfig(): Observable<EnvConfig> {
+    return this.http.get<EnvConfig>('/assets/env.json').pipe(
+      tap((cfg) => {
+        this.cfgSync = cfg;
+        this.cfg$.next(cfg);
+      }),
+      catchError((err) => {
+        console.error('Failed to load config:', err);
+        return EMPTY;
+      })
+    );
   }
 
-  get apiUrl(): string {
-    return this.config?.API_URL;
+  get config$(): Observable<EnvConfig> {
+    return this.cfg$.asObservable();
   }
 
-  get env(): string {
-    return this.config?.ENV_NAME;
+  get<K extends keyof EnvConfig>(key: K): EnvConfig[K] | undefined {
+    return this.cfgSync?.[key];
   }
 }

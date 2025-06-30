@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { AppConfigService } from './app-config.service';
+import { AppConfigService, EnvConfig } from './app-config.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -7,11 +8,20 @@ import { AppConfigService } from './app-config.service';
   styleUrl: './app.component.css',
 })
 export class AppComponent {
-  title = 'buildonce';
-  constructor(private config: AppConfigService) {}
+  env$!: Observable<EnvConfig>;
+  apiBase!: string;
+  url: string | undefined;
 
-  ngOnInit() {
-    this.config.loadConfig().then((d) => console.log(d));
-    console.log(this.config.apiUrl);
+  constructor(private cfg: AppConfigService) {}
+
+  ngOnInit(): void {
+    this.env$ = this.cfg.config$;
+
+    this.cfg.config$.subscribe((env) => {
+      this.apiBase = env.API_URL;
+    });
+
+    this.url = this.cfg.get('API_URL');
+    // console.log(this.url);
   }
 }
